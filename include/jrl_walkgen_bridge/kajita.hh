@@ -12,7 +12,12 @@ namespace jrlWalkgenBridge
   class Kajita2003 : public walk::PatternGenerator2d
   {
   public:
-    explicit Kajita2003();
+    typedef boost::shared_ptr<PatternGeneratorJRL::PatternGeneratorInterface>
+    patterGeneratorInterfacePtr_t;
+    typedef boost::shared_ptr<CjrlHumanoidDynamicRobot>
+    CjrlHumanoidDynamicRobotPtr_t;
+
+    explicit Kajita2003(const std::string& robotDescription);
     explicit Kajita2003(const Kajita2003&);
     ~Kajita2003();
 
@@ -20,7 +25,8 @@ namespace jrlWalkgenBridge
   protected:
     virtual void computeTrajectories();
   private:
-    PatternGeneratorJRL::PatternGeneratorInterface pgi_;
+    CjrlHumanoidDynamicRobotPtr_t robot_;
+    patterGeneratorInterfacePtr_t pgi_;
   };
 } // end of namespace jrlWalkgenBridge.
 

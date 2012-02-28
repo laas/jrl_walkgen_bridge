@@ -1,21 +1,27 @@
 <package>
   <description brief="jrl-walkgen bridge">
 
-    Provides pattern-generators compatible with the walk_interfaces /
+    Provide pattern-generators compatible with the walk_interfaces /
     walk_msgs interface using the jrl-walkgen software.
 
     The following algorithms are provided by this pattern generator:
     <ul>
-      <li>TO BE DONE</li>
+      <li>Kajita 2003</li>
     </ul>
 
   </description>
   <author>Thomas Moulard</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="experimental" notes=""/>
   <url>http://ros.org/wiki/jrl_walkgen_bridge</url>
 
+  <export>
+    <cpp cflags="`pkg-config --cflags eigen3` `rosboost-cfg --cflags` -I${prefix}/include"
+	 lflags="" />
+  </export>
+
   <depend package="common_rosdeps" />
+  <rosdep name="boost" />
   <rosdep name="eigen" />
   <rosdep name="jrl-mal" />
   <rosdep name="jrl-walkgen" />
@@ -32,5 +38,3 @@
   <depend package="angles"/>
 
 </package>
-
-

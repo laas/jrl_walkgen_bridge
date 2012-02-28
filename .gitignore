@@ -1,0 +1,11 @@
+bin/
+build/
+cfg/cpp/
+docs/
+lib/
+msg/lisp/
+msg_gen/
+src/lisp/
+src/jrl_walkgen_bridge/
+srv/lisp/
+srv_gen/
