@@ -1,9 +1,15 @@
 <stack>
   <description brief="jrl_walkgen_bridge">jrl_walkgen_bridge</description>
   <author>Maintained by Thomas Moulard</author>
-  <license></license>  
+  <license>BSD,</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/jrl_walkgen_bridge</url>
+  <depend stack="bullet" /> <!-- bullet -->
+  <depend stack="common_msgs" /> <!-- visualization_msgs -->
+  <depend stack="common_rosdeps" /> <!-- common_rosdeps -->
+  <depend stack="geometry" /> <!-- angles -->
+  <depend stack="humanoid_walk" /> <!-- walk_interfaces, walk_msgs -->
+  <depend stack="redundant_manipulator_control" /> <!-- jrl_dynamics_urdf -->
   <depend stack="ros" />
 
 </stack>

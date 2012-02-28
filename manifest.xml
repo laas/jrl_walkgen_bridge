@@ -25,6 +25,8 @@
   <depend package="walk_interfaces"/>
   <depend package="walk_msgs"/>
 
+  <depend package="jrl_dynamics_urdf"/>
+
   <depend package="visualization_msgs"/>
 
   <depend package="angles"/>
