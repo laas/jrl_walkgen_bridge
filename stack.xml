@@ -1,0 +1,9 @@
+<stack>
+  <description brief="jrl_walkgen_bridge">jrl_walkgen_bridge</description>
+  <author>Maintained by Thomas Moulard</author>
+  <license></license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/jrl_walkgen_bridge</url>
+  <depend stack="ros" />
+
+</stack>
