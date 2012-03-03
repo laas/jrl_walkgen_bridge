@@ -1,5 +1,16 @@
 <stack>
-  <description brief="jrl_walkgen_bridge">jrl_walkgen_bridge</description>
+  <description brief="jrl-walkgen bridge">
+
+    Provide pattern-generators compatible with the walk_interfaces /
+    walk_msgs interface using the jrl-walkgen software.
+
+    The following algorithms are provided by this pattern generator:
+    <ul>
+      <li>Kajita 2003</li>
+    </ul>
+
+  </description>
+
   <author>Maintained by Thomas Moulard</author>
   <license>BSD,</license>
   <review status="unreviewed" notes=""/>
