@@ -9,3 +9,8 @@ src/lisp/
 src/jrl_walkgen_bridge/
 srv/lisp/
 srv_gen/
+
+# jrl-walkgen debug files
+AccelerationCoM.dat
+Accelerations.dat
+CoMs.dat
