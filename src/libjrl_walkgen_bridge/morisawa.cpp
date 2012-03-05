@@ -8,7 +8,7 @@
 
 #include <Eigen/LU>
 
-#include "jrl_walkgen_bridge/kajita.hh"
+#include "jrl_walkgen_bridge/morisawa.hh"
 
 #include <angles/angles.h>
 #include <jrl/dynamics/urdf/parser.hh>
@@ -27,7 +27,7 @@ namespace jrlWalkgenBridge
     return parser.parseStream (robotDescription, "root_joint");
   }
 
-  Kajita2003::Kajita2003 (const std::string& robotDescription)
+  Morisawa2007::Morisawa2007 (const std::string& robotDescription)
     : walk::PatternGenerator2d(),
       robot_ (loadRobot (robotDescription)),
       pgi_ (PatternGeneratorJRL::patternGeneratorInterfaceFactory
@@ -52,7 +52,9 @@ namespace jrlWalkgenBridge
       (":UpperBodyMotionParameters -0.1 -1.0 0.0")
 
       // Dedicated initialization.
-      (":SetAlgoForZmpTrajectory Kajita");
+      (":SetAlgoForZmpTrajectory Morisawa")
+      (":onlinechangestepframe relative")
+      (":SetAutoFirstStep false");
 
     BOOST_FOREACH(const std::string& s, buffer)
       {
@@ -64,17 +66,17 @@ namespace jrlWalkgenBridge
     // is called here.
   }
 
-  Kajita2003::Kajita2003(const Kajita2003& pg)
+  Morisawa2007::Morisawa2007(const Morisawa2007& pg)
     : walk::PatternGenerator2d(),
       robot_ (pg.robot_),
       pgi_ (pg.pgi_)
   {}
 
-  Kajita2003::~Kajita2003()
+  Morisawa2007::~Morisawa2007()
   {}
 
-  Kajita2003&
-  Kajita2003::operator= (const Kajita2003& rhs)
+  Morisawa2007&
+  Morisawa2007::operator= (const Morisawa2007& rhs)
   {
     if (this == &rhs)
       return *this;
@@ -83,27 +85,14 @@ namespace jrlWalkgenBridge
     return *this;
   }
   void
-  Kajita2003::computeTrajectories()
+  Morisawa2007::computeTrajectories()
   {
     ROS_ASSERT (pgi_);
     //FIXME: don't bother with reading the input for now.
     std::istringstream stream
-      (":stepseq 0.0 -0.105 0.0 \
-                     0.2 0.21 0.0  \
-                     0.2 -0.21 0.0 \
-                     0.2 0.21 0.0  \
-                     0.2 -0.21 0.0 \
-                     0.2 0.21 0.0  \
-                     0.2 -0.21 0.0 \
-                     0.2 0.21 0.0  \
-                     0.2 -0.21 0.0 \
-                     0.2 0.21 0.0  \
-                     0.2 -0.21 0.0 \
-                     0.2 0.21 0.0  \
-                     0.2 -0.21 0.0 \
-                     0.2 0.21 0.0  \
-                     0.2 -0.21 0.0 \
-                     0.0 0.21 0.0");
+      (":StartOnLineStepSequencing"
+       " 0.0 -0.095 0.0 0.0 0.19 0.0 0.0 -0.19 0.0 0.0 0.19 0.0");
     pgi_->ParseCmd(stream);
+    std::cout << "OK OK OK" << std::endl;
   }
 } // end of namespace jrlWalkgenBridge.

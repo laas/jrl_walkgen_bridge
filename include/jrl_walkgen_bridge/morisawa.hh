@@ -1,5 +1,5 @@
-#ifndef JRL_WALKGEN_BRIDGE
-# define JRL_WALKGEN_BRIDGE
+#ifndef JRL_WALKGEN_BRIDGE_MORISAWA_HH
+# define JRL_WALKGEN_BRIDGE_MORISAWA_HH
 # include <utility>
 
 # include <jrl/mal/matrixabstractlayer.hh>
@@ -9,7 +9,7 @@
 
 namespace jrlWalkgenBridge
 {
-  class Kajita2003 : public walk::PatternGenerator2d
+  class Morisawa2007 : public walk::PatternGenerator2d
   {
   public:
     typedef boost::shared_ptr<PatternGeneratorJRL::PatternGeneratorInterface>
@@ -17,11 +17,11 @@ namespace jrlWalkgenBridge
     typedef boost::shared_ptr<CjrlHumanoidDynamicRobot>
     CjrlHumanoidDynamicRobotPtr_t;
 
-    explicit Kajita2003(const std::string& robotDescription);
-    explicit Kajita2003(const Kajita2003&);
-    ~Kajita2003();
+    explicit Morisawa2007(const std::string& robotDescription);
+    explicit Morisawa2007(const Morisawa2007&);
+    ~Morisawa2007();
 
-    Kajita2003& operator= (const Kajita2003&);
+    Morisawa2007& operator= (const Morisawa2007&);
   protected:
     virtual void computeTrajectories();
   private:
@@ -30,4 +30,4 @@ namespace jrlWalkgenBridge
   };
 } // end of namespace jrlWalkgenBridge.
 
-#endif //! JRL_WALKGEN_BRIDGE
+#endif //! JRL_WALKGEN_BRIDGE_MORISAWA_HH

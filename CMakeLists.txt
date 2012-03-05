@@ -22,7 +22,8 @@ include_directories(include)
 
 # Main library.
 rosbuild_add_library(${PROJECT_NAME}
-  src/libjrl_walkgen_bridge/kajita.cpp)
+  src/libjrl_walkgen_bridge/kajita.cpp
+  src/libjrl_walkgen_bridge/morisawa.cpp)
 
 rosbuild_add_compile_flags(${PROJECT_NAME} ${JRL_WALKGEN_CFLAGS})
 rosbuild_add_link_flags(${PROJECT_NAME} ${JRL_WALKGEN_LDFLAGS})

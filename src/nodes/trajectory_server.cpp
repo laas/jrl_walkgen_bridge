@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 
 #include <jrl_walkgen_bridge/kajita.hh>
+#include <jrl_walkgen_bridge/morisawa.hh>
 
 #include <walk_interfaces/yaml.hh>
 #include <walk_msgs/abstract-node.hh>
@@ -19,39 +20,47 @@ std::string getParam (const std::string& param,
   return result;
 }
 
-class KajitaTrajectoryServer :
-  public walk_msgs::AbstractNode<jrlWalkgenBridge::Kajita2003,
+template <typename T>
+class TrajectoryServer :
+  public walk_msgs::AbstractNode<T,
 				 walk_msgs::Footprint2d,
 				 walk_msgs::GetPath>
 {
 public:
-  explicit KajitaTrajectoryServer ();
-  ~KajitaTrajectoryServer ();
+  typedef walk_msgs::AbstractNode<T,
+				  walk_msgs::Footprint2d,
+				  walk_msgs::GetPath> parent_t;
+
+  explicit TrajectoryServer ();
+  ~TrajectoryServer ();
 
   virtual void convertFootprint
-  (patternGenerator_t::footprints_t& dst,
-   const std::vector<footprintRosType_t>& src);
+  (typename parent_t::patternGenerator_t::footprints_t& dst,
+   const std::vector<typename parent_t::footprintRosType_t>& src);
 
   virtual void
   setupPatternGenerator (walk_msgs::GetPath::Request& req);
 };
 
-KajitaTrajectoryServer::KajitaTrajectoryServer ()
-  : walk_msgs::AbstractNode<jrlWalkgenBridge::Kajita2003,
+template <typename T>
+TrajectoryServer<T>::TrajectoryServer ()
+  : walk_msgs::AbstractNode<T,
 			    walk_msgs::Footprint2d,
 			    walk_msgs::GetPath>
     ("", getParam ("~world_frame_id", "/world"),
-     jrlWalkgenBridge::Kajita2003 (getParam ("robot_description", "")),
+     T (getParam ("robot_description", "")),
      true)
 {}
 
-KajitaTrajectoryServer::~KajitaTrajectoryServer ()
+template <typename T>
+TrajectoryServer<T>::~TrajectoryServer ()
 {}
 
+template <typename T>
 void
-KajitaTrajectoryServer::convertFootprint
-(patternGenerator_t::footprints_t& dst,
- const std::vector<footprintRosType_t>& src)
+TrajectoryServer<T>::convertFootprint
+(typename parent_t::patternGenerator_t::footprints_t& dst,
+ const std::vector<typename parent_t::footprintRosType_t>& src)
 {
   using boost::posix_time::seconds;
   using boost::posix_time::milliseconds;
@@ -60,7 +69,7 @@ KajitaTrajectoryServer::convertFootprint
   std::vector<walk_msgs::Footprint2d>::const_iterator it = src.begin();
   for (; it != src.end(); ++it)
     {
-      patternGenerator_t::footprint_t footprint;
+      typename parent_t::patternGenerator_t::footprint_t footprint;
       footprint.beginTime = (it->beginTime).toBoost();
       footprint.duration =
 	seconds(it->duration.sec) + milliseconds(it->duration.nsec * 1000);
@@ -71,8 +80,9 @@ KajitaTrajectoryServer::convertFootprint
     }
 }
 
+template <typename T>
 void
-KajitaTrajectoryServer::setupPatternGenerator (walk_msgs::GetPath::Request& req)
+TrajectoryServer<T>::setupPatternGenerator (walk_msgs::GetPath::Request& req)
 {
 }
 
@@ -83,9 +93,25 @@ int main(int argc, char **argv)
     {
       ros::init(argc, argv, "jrl_walkgen_bridge");
 
-      KajitaTrajectoryServer node;
-      if (ros::ok())
-	node.spin();
+      std::string algorithm = getParam("algorithm", "Morisawa2007");
+      if (algorithm == "Morisawa2007")
+	{
+	  ROS_INFO_STREAM
+	    ("starting trajectory server using algorithm " << algorithm);
+	  TrajectoryServer<jrlWalkgenBridge::Morisawa2007> node;
+	  if (ros::ok())
+	    node.spin();
+	}
+      else if (algorithm == "Kajita2003")
+	{
+	  ROS_INFO_STREAM
+	    ("starting trajectory server using algorithm " << algorithm);
+	  TrajectoryServer<jrlWalkgenBridge::Kajita2003> node;
+	  if (ros::ok())
+	    node.spin();
+	}
+      else
+	ROS_FATAL_STREAM("unsupported algorithm: " << algorithm);
     }
   catch (std::exception& e)
     {
