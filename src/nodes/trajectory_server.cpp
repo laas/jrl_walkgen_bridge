@@ -20,6 +20,14 @@ std::string getParam (const std::string& param,
   return result;
 }
 
+double getParam (const std::string& param,
+		 const double& defaultValue)
+{
+  double result;
+  ros::param::param<double> (param, result, defaultValue);
+  return result;
+}
+
 template <typename T>
 class TrajectoryServer :
   public walk_msgs::AbstractNode<T,
@@ -31,7 +39,7 @@ public:
 				  walk_msgs::Footprint2d,
 				  walk_msgs::GetPath> parent_t;
 
-  explicit TrajectoryServer ();
+  explicit TrajectoryServer (T& patternGenerator);
   ~TrajectoryServer ();
 
   virtual void convertFootprint
@@ -43,12 +51,12 @@ public:
 };
 
 template <typename T>
-TrajectoryServer<T>::TrajectoryServer ()
+TrajectoryServer<T>::TrajectoryServer (T& patternGenerator)
   : walk_msgs::AbstractNode<T,
 			    walk_msgs::Footprint2d,
 			    walk_msgs::GetPath>
     ("", getParam ("~world_frame_id", "/world"),
-     T (getParam ("robot_description", "")),
+     patternGenerator,
      true)
 {}
 
@@ -98,7 +106,11 @@ int main(int argc, char **argv)
 	{
 	  ROS_INFO_STREAM
 	    ("starting trajectory server using algorithm " << algorithm);
-	  TrajectoryServer<jrlWalkgenBridge::Morisawa2007> node;
+	  jrlWalkgenBridge::Morisawa2007 patternGenerator
+	    (getParam ("robot_description", ""),
+	     getParam ("~step", 0.005));
+	  TrajectoryServer<jrlWalkgenBridge::Morisawa2007> node
+	    (patternGenerator);
 	  if (ros::ok())
 	    node.spin();
 	}
@@ -106,7 +118,10 @@ int main(int argc, char **argv)
 	{
 	  ROS_INFO_STREAM
 	    ("starting trajectory server using algorithm " << algorithm);
-	  TrajectoryServer<jrlWalkgenBridge::Kajita2003> node;
+	  jrlWalkgenBridge::Kajita2003 patternGenerator
+	    (getParam ("robot_description", ""));
+	  TrajectoryServer<jrlWalkgenBridge::Kajita2003> node
+	    (patternGenerator);
 	  if (ros::ok())
 	    node.spin();
 	}

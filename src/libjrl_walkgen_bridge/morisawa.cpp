@@ -7,6 +7,7 @@
 #include <boost/math/constants/constants.hpp>
 
 #include <Eigen/LU>
+#include <LinearMath/btMatrix3x3.h>
 
 #include "jrl_walkgen_bridge/morisawa.hh"
 
@@ -27,19 +28,59 @@ namespace jrlWalkgenBridge
     return parser.parseStream (robotDescription, "root_joint");
   }
 
-  Morisawa2007::Morisawa2007 (const std::string& robotDescription)
+  namespace
+  {
+    static std::string makeCommand (const std::string& key, double value)
+    {
+      boost::format fmt (":%1% %2%");
+      fmt % key % value;
+      return fmt.str ();
+    }
+  } // end of anonymous namespace.
+
+  Morisawa2007::Morisawa2007 (const std::string& robotDescription,
+			      const double& step)
     : walk::PatternGenerator2d(),
+      step_ (step),
       robot_ (loadRobot (robotDescription)),
       pgi_ (PatternGeneratorJRL::patternGeneratorInterfaceFactory
 	    (&*robot_))
   {
     ROS_ASSERT(pgi_);
+  }
+
+  Morisawa2007::Morisawa2007(const Morisawa2007& pg)
+    : walk::PatternGenerator2d(),
+      step_ (pg.step_),
+      robot_ (pg.robot_),
+      pgi_ (pg.pgi_)
+  {}
+
+  Morisawa2007::~Morisawa2007()
+  {}
+
+  Morisawa2007&
+  Morisawa2007::operator= (const Morisawa2007& rhs)
+  {
+    if (this == &rhs)
+      return *this;
+    step_ = rhs.step_;
+    robot_ = rhs.robot_;
+    pgi_ = rhs.pgi_;
+    return *this;
+  }
+  void
+  Morisawa2007::computeTrajectories()
+  {
+    ROS_ASSERT (pgi_);
 
     // Common pattern generator initialization.
     using boost::assign::list_of;
     std::vector<std::string> buffer =
-      list_of (":comheight 0.8078")
-      (":samplingperiod 0.005")
+      list_of
+      (makeCommand
+       ("comheight", initialCenterOfMassPosition()[2]).c_str ())
+      (makeCommand ("samplingperiod", step_).c_str ())
       (":previewcontroltime 1.6")
       (":omega 0.0")
       (":stepheight 0.07")
@@ -64,35 +105,109 @@ namespace jrlWalkgenBridge
 
     //FIXME: in jrl-walkgen test, evaluateStartPosition
     // is called here.
-  }
 
-  Morisawa2007::Morisawa2007(const Morisawa2007& pg)
-    : walk::PatternGenerator2d(),
-      robot_ (pg.robot_),
-      pgi_ (pg.pgi_)
-  {}
+    // Compute step sequence.
+    std::string stepSequence;
 
-  Morisawa2007::~Morisawa2007()
-  {}
+    //FIXME: feet *relative* position.
+    stepSequence += "0.0 -0.095 0.0 ";
 
-  Morisawa2007&
-  Morisawa2007::operator= (const Morisawa2007& rhs)
-  {
-    if (this == &rhs)
-      return *this;
-    robot_ = rhs.robot_;
-    pgi_ = rhs.pgi_;
-    return *this;
-  }
-  void
-  Morisawa2007::computeTrajectories()
-  {
-    ROS_ASSERT (pgi_);
-    //FIXME: don't bother with reading the input for now.
-    std::istringstream stream
-      (":StartOnLineStepSequencing"
-       " 0.0 -0.095 0.0 0.0 0.19 0.0 0.0 -0.19 0.0 0.0 0.19 0.0");
-    pgi_->ParseCmd(stream);
-    std::cout << "OK OK OK" << std::endl;
+    typedef walk::PatternGenerator2d::footprint_t footprint_t;
+    BOOST_FOREACH (footprint_t footprint, footprints ())
+    {
+      boost::format fmt ("%1% %2% %3% ");
+      fmt
+	% footprint.position (0)
+	% footprint.position (1)
+	% footprint.position (2);
+      stepSequence += fmt.str ();
+    }
+    stepSequence = ":StartOnLineStepSequencing " + stepSequence;
+
+    buffer.push_back (stepSequence.c_str ());
+    buffer.push_back (":StopOnLineStepSequencing");
+    BOOST_FOREACH(const std::string& s, buffer)
+      {
+	std::istringstream stream(s);
+	pgi_->ParseCmd(stream);
+      }
+
+    MAL_VECTOR_DIM (configuration, double, robot_->numberDof ());
+    MAL_VECTOR_DIM (velocity, double, robot_->numberDof ());
+    MAL_VECTOR_DIM (acceleration, double, robot_->numberDof ());
+    MAL_VECTOR_DIM (zmp, double, 3);
+    PatternGeneratorJRL::COMState com;
+    PatternGeneratorJRL::FootAbsolutePosition leftFoot;
+    PatternGeneratorJRL::FootAbsolutePosition rightFoot;
+
+    using boost::posix_time::milliseconds;
+
+    getCenterOfMassTrajectory ().data ().clear ();
+    while (pgi_->RunOneStepOfTheControlLoop
+	   (configuration, velocity, acceleration, zmp, com,
+	    leftFoot, rightFoot))
+      {
+	walk::Trajectory3d::element_t leftFootElement;
+	btMatrix3x3 leftFootRotation;
+	walk::Trajectory3d::element_t rightFootElement;
+	btMatrix3x3 rightFootRotation;
+	walk::TrajectoryV3d::element_t comElement;
+	walk::TrajectoryV2d::element_t zmpElement;
+
+	double yaw = 0.;
+	double pitch = 0.;
+	double roll = 0.;
+
+	// Left foot.
+	leftFootElement.duration = milliseconds (step_ * 1e3);
+	leftFootElement.position.setIdentity ();
+	leftFootElement.position (0, 3) =
+	  leftFoot.x;
+	leftFootElement.position (1, 3) =
+	  leftFoot.y;
+	leftFootElement.position (2, 3) =
+	  leftFoot.z;
+	yaw = angles::from_degrees (leftFoot.theta);
+	pitch = angles::from_degrees (leftFoot.omega2);
+	roll = angles::from_degrees (leftFoot.omega);
+	leftFootRotation.setEulerYPR (yaw, pitch, roll);
+	for (unsigned i = 0; i < 3; ++i)
+	  for (unsigned j = 0; j < 3; ++j)
+	    leftFootElement.position (i, j) = leftFootRotation[i][j];
+	getLeftFootTrajectory().data ().push_back (leftFootElement);
+
+	// Right foot.
+	rightFootElement.duration = milliseconds (step_ * 1e3);
+	rightFootElement.position.setIdentity ();
+	rightFootElement.position (0, 3) =
+	  rightFoot.x;
+	rightFootElement.position (1, 3) =
+	  rightFoot.y;
+	rightFootElement.position (2, 3) =
+	  rightFoot.z;
+	yaw = angles::from_degrees (rightFoot.theta);
+	pitch = angles::from_degrees (rightFoot.omega2);
+	roll = angles::from_degrees (rightFoot.omega);
+	rightFootRotation.setEulerYPR (yaw, pitch, roll);
+	for (unsigned i = 0; i < 3; ++i)
+	  for (unsigned j = 0; j < 3; ++j)
+	    rightFootElement.position (i, j) = rightFootRotation[i][j];
+	getRightFootTrajectory().data ().push_back (rightFootElement);
+
+	// Center of mass.
+	comElement.duration = milliseconds (step_ * 1e3);
+	comElement.position[0] = com.x[0];
+	comElement.position[1] = com.y[0];
+	comElement.position[2] = com.z[0];
+	getCenterOfMassTrajectory ().data ().push_back (comElement);
+
+	// ZMP
+	zmpElement.duration = milliseconds (step_ * 1e3);
+	zmpElement.position[0] = zmp (0);
+	zmpElement.position[1] = zmp (1);
+	getZmpTrajectory ().data ().push_back (zmpElement);
+
+	// FIXME: posture.
+      }
   }
 } // end of namespace jrlWalkgenBridge.

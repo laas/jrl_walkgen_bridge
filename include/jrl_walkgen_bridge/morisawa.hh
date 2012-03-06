@@ -17,14 +17,16 @@ namespace jrlWalkgenBridge
     typedef boost::shared_ptr<CjrlHumanoidDynamicRobot>
     CjrlHumanoidDynamicRobotPtr_t;
 
-    explicit Morisawa2007(const std::string& robotDescription);
-    explicit Morisawa2007(const Morisawa2007&);
+    explicit Morisawa2007 (const std::string& robotDescription,
+			   const double& step);
+    explicit Morisawa2007 (const Morisawa2007&);
     ~Morisawa2007();
 
     Morisawa2007& operator= (const Morisawa2007&);
   protected:
     virtual void computeTrajectories();
   private:
+    double step_;
     CjrlHumanoidDynamicRobotPtr_t robot_;
     patternGeneratorInterfacePtr_t pgi_;
   };

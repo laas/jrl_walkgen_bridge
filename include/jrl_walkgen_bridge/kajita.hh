@@ -25,6 +25,7 @@ namespace jrlWalkgenBridge
   protected:
     virtual void computeTrajectories();
   private:
+    double step_;
     CjrlHumanoidDynamicRobotPtr_t robot_;
     patternGeneratorInterfacePtr_t pgi_;
   };
