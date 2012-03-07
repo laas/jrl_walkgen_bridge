@@ -20,6 +20,7 @@ if __name__ == "__main__":
 
         client.final_left_foot_position.position.x = 3 * 0.25
         client.final_right_foot_position.position.x = 3 * 0.25
+        client.final_center_of_mass_position.x = 3 * 0.25
 
         def makeFootprint(x, y):
             footprint = walk_msgs.msg.Footprint2d()
