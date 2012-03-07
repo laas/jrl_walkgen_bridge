@@ -94,8 +94,7 @@ namespace jrlWalkgenBridge
 
       // Dedicated initialization.
       (":SetAlgoForZmpTrajectory Morisawa")
-      (":onlinechangestepframe relative")
-      (":SetAutoFirstStep false");
+      (":SetAutoFirstStep true");
 
     BOOST_FOREACH(const std::string& s, buffer)
       {
@@ -109,23 +108,54 @@ namespace jrlWalkgenBridge
     // Compute step sequence.
     std::string stepSequence;
 
-    //FIXME: feet *relative* position.
-    stepSequence += "0.0 -0.095 0.0 ";
+    walk::HomogeneousMatrix3d world_M_footprint;
+    if (startWithLeftFoot())
+      {
+	world_M_footprint = initialRightFootPosition ();
+	stepSequence += (boost::format("%1% %2% %3% ")
+			 % initialRightFootPosition () (0, 3)
+			 % initialRightFootPosition () (1, 3)
+			 % std::atan2 (initialRightFootPosition () (1, 0),
+				       initialRightFootPosition () (0, 0))
+			 ).str ();
+      }
+    else
+      {
+	world_M_footprint = initialLeftFootPosition ();
+	stepSequence += (boost::format("%1% %2% %3% ")
+			 % initialLeftFootPosition () (0, 3)
+			 % initialLeftFootPosition () (1, 3)
+			 % std::atan2 (initialLeftFootPosition () (1, 0),
+				       initialLeftFootPosition () (0, 0))
+			 ).str ();
+      }
 
     typedef walk::PatternGenerator2d::footprint_t footprint_t;
     BOOST_FOREACH (footprint_t footprint, footprints ())
-    {
-      boost::format fmt ("%1% %2% %3% ");
-      fmt
-	% footprint.position (0)
-	% footprint.position (1)
-	% footprint.position (2);
-      stepSequence += fmt.str ();
-    }
-    stepSequence = ":StartOnLineStepSequencing " + stepSequence;
+      {
+	walk::HomogeneousMatrix3d world_M_newFootprint;
+	world_M_newFootprint.setIdentity ();
+	for (unsigned i = 0; i < 2; ++i)
+	  world_M_newFootprint (i, 3) = footprint.position (i);
 
+	walk::HomogeneousMatrix3d footprint_M_newFootprint =
+	  world_M_footprint.inverse () * world_M_newFootprint;
+
+	boost::format fmt ("%1% %2% %3% ");
+	fmt
+	  % footprint_M_newFootprint (0, 3)
+	  % footprint_M_newFootprint (1, 3)
+	  % std::atan2 (footprint_M_newFootprint (1, 0),
+			footprint_M_newFootprint (0, 0));
+	stepSequence += fmt.str ();
+
+	world_M_footprint = world_M_newFootprint;
+      }
+
+    ROS_DEBUG_STREAM ("step sequence: " << stepSequence);
+
+    stepSequence = ":stepseq " + stepSequence;
     buffer.push_back (stepSequence.c_str ());
-    buffer.push_back (":StopOnLineStepSequencing");
     BOOST_FOREACH(const std::string& s, buffer)
       {
 	std::istringstream stream(s);
